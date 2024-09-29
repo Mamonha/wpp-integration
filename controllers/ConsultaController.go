@@ -13,14 +13,14 @@ func HandleConsulta(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var consultaID models.ConsultaID
+	var consultaRequest models.ConsultaRequest
 
-	if err := json.NewDecoder(r.Body).Decode(&consultaID); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&consultaRequest); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	fmt.Printf("ConsultaID: %d, PacienteID: %d\n", consultaID.ConsultaID, consultaID.PacienteID)
+	fmt.Printf("ConsultaID: %d, PacienteNome: %s, DataAgendamento: %s\n",
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(consultaID)
