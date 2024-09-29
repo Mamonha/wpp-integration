@@ -3,8 +3,11 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"wpp-integration/models"
+	"wpp-integration/services"
 )
 
 func HandleConsulta(w http.ResponseWriter, r *http.Request) {
