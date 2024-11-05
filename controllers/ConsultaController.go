@@ -4,10 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"wpp-integration/models"
 	"wpp-integration/services"
+
+	"github.com/joho/godotenv"
 )
 
 func HandleConsulta(w http.ResponseWriter, r *http.Request) {
@@ -22,6 +26,8 @@ func HandleConsulta(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	fmt.Println("Chegou aqui")
+	fmt.Print(consultaRequest)
 
 	fmt.Printf("ConsultaID: %d, PacienteNome: %s, DataAgendamento: %s\n",
 		consultaRequest.ConsultaID, consultaRequest.HoraDeInicio, consultaRequest.PacienteNome, consultaRequest.HoraDoFim, consultaRequest.Telefone)
@@ -98,4 +104,67 @@ func HandleMessageRecord(phoneNumber string, messageBody string) error {
 		return fmt.Errorf("Failed to update message status")
 	}
 	return nil
+}
+
+func Saldo(w http.ResponseWriter, r *http.Request) {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Erro ao carregar o arquivo .env: %v", err)
+	}
+
+	endpointUrl := os.Getenv("WHATSGW_BALANCE")
+	if endpointUrl == "" {
+		http.Error(w, "URL não configurada", http.StatusInternalServerError)
+		return
+	}
+
+	apiKey := os.Getenv("WHATSGW_API_KEY")
+	if apiKey == "" {
+		http.Error(w, "Chave de API não configurada", http.StatusInternalServerError)
+		return
+	}
+	data := url.Values{}
+	data.Set("apikey", apiKey)
+
+	req, err := http.NewRequest("GET", endpointUrl, nil)
+	if err != nil {
+		http.Error(w, "Erro ao criar a requisição", http.StatusInternalServerError)
+		fmt.Println("Erro ao criar a requisição:", err)
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.URL.RawQuery = data.Encode()
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		http.Error(w, "Erro ao fazer a requisição", http.StatusInternalServerError)
+		fmt.Println("Erro ao fazer a requisição:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	fmt.Println("Status Code:", resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, "Erro ao ler a resposta", http.StatusInternalServerError)
+		fmt.Println("Erro ao ler a resposta:", err)
+		return
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(body, &result); err != nil {
+		http.Error(w, "Erro ao decodificar o JSON", http.StatusInternalServerError)
+		fmt.Println("Erro ao decodificar o JSON:", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(result); err != nil {
+		http.Error(w, "Erro ao enviar resposta JSON", http.StatusInternalServerError)
+		fmt.Println("Erro ao enviar resposta JSON:", err)
+		return
+	}
 }
