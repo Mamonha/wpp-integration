@@ -22,6 +22,7 @@ func main() {
 	r.Post("/api/consultas", controllers.HandleConsulta)
 
 	r.Post("/api/webhook", controllers.Webhook)
+	r.Get("/api/saldo", controllers.Saldo)
 	fmt.Println("Servidor rodando na porta 8000")
 	log.Fatal(http.ListenAndServe(":8000", r))
 }
